@@ -1,5 +1,5 @@
 package ru.red.car_meta.scraper
-package abstraction
+package scraper
 
 import domain.{CarAd, CarMeta, CategoryDefinitionUrl}
 
