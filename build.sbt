@@ -15,6 +15,7 @@ val kafkaStreamsVersion = "3.3.1"
 val fs2KafkaStreamsVersion = "3.0.0-M8"
 
 val scalaScraperVersion = "3.0.0"
+val circeVersion = "0.15.0-M1"
 
 val canoeVersion = "0.6.0"
 
@@ -82,10 +83,12 @@ libraryDependencies ++= Seq(
   "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion
 )
 
-// Scraping
+// Scraping and Parsing
 
 libraryDependencies ++= Seq(
-  "net.ruippeixotog" %% "scala-scraper" % scalaScraperVersion
+  "net.ruippeixotog" %% "scala-scraper" % scalaScraperVersion,
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion
 )
 
 // Telegram
