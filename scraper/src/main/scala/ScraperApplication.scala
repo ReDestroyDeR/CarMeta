@@ -10,6 +10,8 @@ object ScraperApplication extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] =
     IO.delay(carScraper.getCarLinks)
-      .flatMap(links => links.foreach(IO.println(_)).compile.drain)
+      .map(links => links.drop(10000).parEvalMap(Runtime.getRuntime.availableProcessors())(carScraper.parseCarLink).take(50))
+      .flatMap(links => links.compile.toList)
+      .flatMap(IO.println(_))
       .as(ExitCode.Success)
 }

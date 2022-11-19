@@ -8,23 +8,35 @@ import cats.data.OptionT
 import cats.effect.implicits._
 import cats.effect.kernel.{Clock, Concurrent}
 import cats.implicits._
+import fs2._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model._
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
 
+import scala.util.Try
+
 class AvtoRussiaScraper [F[_]: Monad: HtmlScraper: Clock: Concurrent] extends CarScraper[F] {
-  private val sitemaps: List[Link] = List(
+  private val sitemaps: List[String] = List(
     "https://avto-russia.ru/sitemap1.xml",
-    "https://avto-russia.ru/sitemap2.xml")
-    .map(Link)
+    "https://avto-russia.ru/sitemap2.xml"
+  )
 
+  private def parseDouble(str: String): Double =
+    Try(str.split(" ")(0).toDouble).getOrElse(0.0d)
 
-  override def getCarLinks: fs2.Stream[F, CarUrl] =
-    fs2.Stream.iterable(sitemaps)
+  override def getCarLinks: Stream[F, CarUrl] =
+    Stream.iterable(sitemaps)
       .evalMap(HtmlScraper[F].parseUrl(_))
-      .flatMap(sitemap => fs2.Stream.iterable(sitemap >> elementList("id")))
+      .map(xml => s"""
+            |<head></head>
+            |<body>$xml</body>
+            |""".stripMargin
+      )
+      .evalMap(HtmlScraper[F].parseString(_))
+      .filter(b => b.body != null)
+      .flatMap(sitemap => Stream.iterable(sitemap >> elementList("loc")))
       .map(_.text)
       .filter(link => link.endsWith(".html"))
       .filter(link => link.contains("autos") || link.contains("moto"))
@@ -32,9 +44,12 @@ class AvtoRussiaScraper [F[_]: Monad: HtmlScraper: Clock: Concurrent] extends Ca
       .map(CarUrl)
 
   override def parseCarLink(carLink: CarUrl): F[CarAd] = (for {
-    document <- OptionT.liftF(HtmlScraper[F].parseUrl(carLink.url))
-    elements <- OptionT.liftF(fs2.Stream.evalSeq(Monad[F].point(document >> elementList("table")))
-      .flatMap(table => fs2.Stream.evalSeq(Monad[F].point(table >> elementList("tr"))))
+    document <- OptionT.liftF(HtmlScraper[F].parseUrl(carLink.url.url))
+    header <- OptionT(Monad[F].point(document)
+      .map(doc => Option(doc >> allText("h1"))
+        .filter(text => text.contains("Технические характеристики"))))
+    elements <- OptionT.liftF(Stream.evalSeq(Monad[F].point(document >> elementList("table")))
+      .flatMap(table => Stream.evalSeq(Monad[F].point(table >> elementList("tr"))))
       .map(_.children)
       .map(children => children.headOption
         .flatMap(title => children.tail.headOption
@@ -46,13 +61,13 @@ class AvtoRussiaScraper [F[_]: Monad: HtmlScraper: Clock: Concurrent] extends Ca
       .compile
       .fold(Map.empty[String, String])((map, nodes) => map + nodes))
     model <- OptionT(Monad[F].point(elements.get("Модификация")))
-    height <- OptionT(Monad[F].point(elements.get("Высота"))).map(_.toDouble)
-    width <- OptionT(Monad[F].point(elements.get("Ширина"))).map(_.toDouble)
-    maximumAllowedMass <- OptionT(Monad[F].point(elements.get("Полная масса"))).map(_.toDouble)
-    maximumSpeed <- OptionT(Monad[F].point(elements.get("Максимальная скорость"))).map(_.toDouble)
-    accelerationSpeed <- OptionT(Monad[F].point(elements.get("Время разгона до 100 км/ч"))).map(_.toDouble)
+    height <- OptionT(Monad[F].point(elements.get("Высота"))).map(parseDouble(_))
+    width <- OptionT(Monad[F].point(elements.get("Ширина"))).map(parseDouble(_))
+    maximumAllowedMass <- OptionT(Monad[F].point(elements.get("Полная масса"))).map(parseDouble(_))
+    maximumSpeed <- OptionT(Monad[F].point(elements.get("Максимальная скорость"))).map(parseDouble(_))
+    accelerationSpeed <- OptionT(Monad[F].point(elements.get("Время разгона до 100 км/ч"))).map(parseDouble(_))
     seats <- OptionT(Monad[F].point(elements.get("Количество мест"))).map(_.toInt)
-    price <- OptionT.liftF(Monad[F].point("-")).map(_.toDouble)
+    price <- OptionT.liftF(Monad[F].point("-")).map(parseDouble(_))
     retrievedAt <- OptionT.liftF(Clock[F].realTime.map(RetrievedAt))
   } yield CarAd(
     Model(model),
@@ -64,5 +79,5 @@ class AvtoRussiaScraper [F[_]: Monad: HtmlScraper: Clock: Concurrent] extends Ca
     Seats(seats),
     Money(price, Currency("RUB")),
     carLink.url,
-    retrievedAt)).getOrRaise(new UnknownError())
+    retrievedAt)).getOrElse(null)
 }
