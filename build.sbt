@@ -16,6 +16,7 @@ val fs2KafkaStreamsVersion = "3.0.0-M8"
 
 val scalaScraperVersion = "3.0.0"
 val circeVersion = "0.15.0-M1"
+val xs4sVersion = "0.9.1"
 
 val canoeVersion = "0.6.0"
 
@@ -80,13 +81,15 @@ libraryDependencies ++= Seq(
 enablePlugins(Fs2Grpc)
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-  "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion
+  "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion,
+  "com.scalawilliam" %% "xs4s-fs2" % xs4sVersion
 )
 
 // Scraping and Parsing
 
 libraryDependencies ++= Seq(
   "net.ruippeixotog" %% "scala-scraper" % scalaScraperVersion,
+  "com.scalawilliam" %% "xs4s-core" % xs4sVersion,
   "io.circe" %% "circe-core" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion
 )

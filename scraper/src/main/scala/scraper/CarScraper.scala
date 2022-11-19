@@ -1,12 +1,10 @@
 package ru.red.car_meta.scraper
 package scraper
 
-import domain.{CarAd, CarMeta, CategoryDefinitionUrl}
+import domain.{CarAd, CarUrl}
 
 trait CarScraper[F[_]] {
-  def getCategories: fs2.Stream[F, CategoryDefinitionUrl]
+  def getCarLinks: fs2.Stream[F, CarUrl]
 
-  def getCarsMetasInCategory(categoryDefinitionUrl: CategoryDefinitionUrl): fs2.Stream[F, CarMeta]
-
-  def parseCarMeta(carMeta: CarMeta): F[CarAd]
+  def parseCarLink(carLink: CarUrl): F[CarAd]
 }

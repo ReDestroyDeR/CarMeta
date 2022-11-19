@@ -8,7 +8,7 @@ import cats.implicits._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.model.Document
 
-class ScrapingService[F[_]: Sync] extends CoreScraper[F] {
+class ScrapingService[F[_]: Sync] extends HtmlScraper[F] {
   private val browser = JsoupBrowser()
 
   def parseUrl[T <: Link](url: T): F[Document] =

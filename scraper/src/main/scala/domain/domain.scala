@@ -1,16 +1,18 @@
 package ru.red.car_meta.scraper
 
+import scala.concurrent.duration.FiniteDuration
+
 package object domain {
   case class Meters(value: Double) extends AnyVal
-  case class Height(value: Meters) extends AnyVal
-  case class Width(value: Meters) extends AnyVal
+  case class Height(value: Meters)
+  case class Width(value: Meters)
 
   case class Kilograms(value: Double) extends AnyVal
-  case class MaximumAllowedMass(value: Kilograms) extends AnyVal
+  case class MaximumAllowedMass(value: Kilograms)
 
   case class KilometersPerHour(value: Double) extends AnyVal
-  case class MaximumSpeed(value: KilometersPerHour) extends AnyVal
-  case class AccelerationSpeed(value: KilometersPerHour) extends AnyVal
+  case class MaximumSpeed(value: KilometersPerHour)
+  case class AccelerationSpeed(value: KilometersPerHour)
 
   case class Seats(value: Int) extends AnyVal
 
@@ -35,8 +37,8 @@ package object domain {
   case class Model(value: String) extends AnyVal
 
   case class Link(url: String) extends AnyVal
-  case class CategoryDefinitionUrl(url: Link) extends AnyVal
-  case class UncategorizedPage(url: Link) extends AnyVal
+  case class CarUrl(url: Link)
+  case class UncategorizedPage(url: Link)
 
-  case class RetrievedAt(timestamp: Long) extends AnyVal
+  case class RetrievedAt(timestamp: FiniteDuration)
 }
