@@ -81,8 +81,7 @@ libraryDependencies ++= Seq(
 enablePlugins(Fs2Grpc)
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-  "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion,
-  "com.scalawilliam" %% "xs4s-fs2" % xs4sVersion
+  "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion
 )
 
 // Scraping and Parsing
