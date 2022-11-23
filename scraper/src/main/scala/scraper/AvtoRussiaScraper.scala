@@ -12,6 +12,7 @@ import fs2._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
+import ru.red.car_meta.scraper.domain.car_domain.CarDefinition
 
 import scala.util.Try
 
@@ -21,7 +22,7 @@ class AvtoRussiaScraper extends CarDefinitionScraper {
     "https://avto-russia.ru/sitemap2.xml"
   )
 
-  override def getDefinitionUrls[F[_]: Monad: Concurrent: HtmlScraper]: Stream[F, Link] =
+  override def getDefinitionUrls[F[_]: Monad: Concurrent: HtmlScraper]: Stream[F, String] =
     Stream.iterable(sitemaps)
       .evalMap(HtmlScraper[F].parseUrl(_))
       .map(xml =>
@@ -36,11 +37,10 @@ class AvtoRussiaScraper extends CarDefinitionScraper {
       .map(_.text)
       .filter(link => link.endsWith(".html"))
       .filter(link => link.contains("autos") || link.contains("moto"))
-      .map(Link)
 
-  override def parseCarLink[F[_]: Monad: Concurrent: HtmlScraper](carLink: Link): F[Option[CarDefinition]] = for {
+  override def parseCarLink[F[_]: Monad: Concurrent: Clock: HtmlScraper](carLink: String): F[Option[CarDefinition]] = (for {
     // Get HTML
-    document <- OptionT.liftF(HtmlScraper[F].parseUrl(carLink.url))
+    document <- OptionT.liftF(HtmlScraper[F].parseUrl(carLink))
     // Fail fast if header is not present
     header <- OptionT(Monad[F].point(document)
       .map(doc => Option(doc >> allText("h1"))
@@ -59,6 +59,7 @@ class AvtoRussiaScraper extends CarDefinitionScraper {
       .compile
       .fold(Map.empty[String, String])((map, nodes) => map + nodes))
     // Extract optional car data
+    brand <- OptionT(Monad[F].point(elements.get("Модель")))
     model <- OptionT(Monad[F].point(elements.get("Модификация")))
     height <- OptionT(Monad[F].point(elements.get("Высота"))).map(parseDouble)
     width <- OptionT(Monad[F].point(elements.get("Ширина"))).map(parseDouble)
@@ -67,23 +68,22 @@ class AvtoRussiaScraper extends CarDefinitionScraper {
     maximumSpeed <- OptionT(Monad[F].point(elements.get("Максимальная скорость"))).map(parseDouble)
     accelerationSpeed <- OptionT(Monad[F].point(elements.get("Время разгона до 100 км/ч"))).map(parseDouble)
     seats <- OptionT(Monad[F].point(elements.get("Количество мест"))).map(_.toInt)
-    retrievedAt <- OptionT.liftF(Clock[F].realTime.map(RetrievedAt))
-    domain <- OptionT.liftF(getDomain)
+    retrievedAt <- OptionT.liftF(Clock[F].realTime.map(_.toMillis))
   } yield CarDefinition(
-      Model(model),
-      Meters(height),
-      Meters(width),
-      Meters(length),
-      Kilograms(maximumAllowedMass),
-      Speed(maximumSpeed),
-      AccelerationSpeed(accelerationSpeed),
-      Seats(seats),
+      brand,
+      model,
+      height,
+      width,
+      length,
+      maximumAllowedMass,
+      maximumSpeed,
+      accelerationSpeed,
+      seats,
       carLink,
-      domain,
       retrievedAt
-  )
+  )).value
 
-  override def getDomain: F[Source[F]] = Monad[F].pure("https://avto-russia.ru")
+  override def getDomain[F[_]: Monad]: F[Source] = Monad[F].pure(Source("https://avto-russia.ru", this))
 
   private def parseDouble(str: String): Double =
     Try(str.split(" ")(0).toDouble).getOrElse(0.0d)

@@ -58,7 +58,6 @@ lazy val warehouse = project
 
 // Typelevel
 
-scalacOptions += "-Ypartial-unification"
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsCoreVersion,
   "org.typelevel" %% "cats-effect" % catsEffectVersion,

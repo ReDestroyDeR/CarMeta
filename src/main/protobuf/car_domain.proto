@@ -1,0 +1,36 @@
+syntax = "proto2";
+
+package ru.red.car_meta.scraper.domain;
+
+message CarDefinition {
+    required string brand = 1;
+    required string model = 2;
+    required double height = 3;
+    required double width = 4;
+    required double length = 5;
+    required double maximumAllowedMass = 6;
+    required double maximumSpeed = 7;
+    required double accelerationSpeed = 8;
+    required uint32 seats = 9;
+    required string sourceLink = 10;
+    required uint64 retrievedAt = 11;
+}
+
+message CarAd {
+    required string brand = 1;
+    required string model = 2;
+    required Money price = 3;
+    required string adUrl = 4;
+    required uint64 retrievedAt = 5;
+
+    enum Currency {
+        EUR = 1;
+        USD = 2;
+        RUB = 3;
+    }
+
+    message Money {
+        required double amount = 1;
+        required Currency currency = 2;
+    }
+}

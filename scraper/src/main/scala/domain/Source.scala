@@ -6,14 +6,14 @@ import scraper.Scraper
 import cats.Monad
 
 sealed trait Source {
-  def getScraper[F[_]: Monad]: F[Scraper[F]]
-  def getDomain[F[_]: Monad]: F[Link]
+  def getScraper[F[_]: Monad]: F[Scraper]
+  def getDomain[F[_]: Monad]: F[String]
 }
 object Source {
-  def apply[G[_]: Monad](domain: Link, scraper: Scraper[G]): Source =
+  def apply(domain: String, scraper: Scraper): Source =
      new Source {
-       override def getScraper[F[_]: Monad]: F[Scraper[F]] = Monad[F].pure(domain)
+       override def getScraper[F[_]: Monad]: F[Scraper] = Monad[F].pure(scraper)
 
-       override def getDomain[F[_]: Monad]: F[Link] = Monad[F].pure(scraper)
+       override def getDomain[F[_]: Monad]: F[String] = Monad[F].pure(domain)
      }
 }
