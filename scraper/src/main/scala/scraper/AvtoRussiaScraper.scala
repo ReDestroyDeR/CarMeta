@@ -16,7 +16,7 @@ import ru.red.car_meta.scraper.domain.car_domain.CarDefinition
 
 import scala.util.Try
 
-class AvtoRussiaScraper extends CarDefinitionScraper {
+object AvtoRussiaScraper extends CarDefinitionScraper {
   private val sitemaps: List[String] = List(
     "https://avto-russia.ru/sitemap1.xml",
     "https://avto-russia.ru/sitemap2.xml"

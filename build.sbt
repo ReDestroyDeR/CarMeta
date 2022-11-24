@@ -9,6 +9,8 @@ Compile / PB.targets := Seq(
 val catsCoreVersion = "2.9.0"
 val catsEffectVersion = "3.4.0"
 
+val cirisVersion = "3.0.0"
+
 val fs2Version = "3.3.0"
 
 val kafkaStreamsVersion = "3.3.1"
@@ -19,6 +21,8 @@ val circeVersion = "0.15.0-M1"
 val xs4sVersion = "0.9.1"
 
 val canoeVersion = "0.6.0"
+
+val logbackVersion = "1.4.5"
 
 lazy val root = (project in file("."))
   .settings(
@@ -64,6 +68,14 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
 )
 
+// Configuration
+
+libraryDependencies ++= Seq(
+  "is.cir" %% "ciris" % cirisVersion,
+  "is.cir" %% "ciris-circe" % cirisVersion,
+  "is.cir" %% "ciris-circe-yaml" % cirisVersion
+)
+
 // FS2
 
 libraryDependencies += "co.fs2" %% "fs2-core" % fs2Version
@@ -95,3 +107,7 @@ libraryDependencies ++= Seq(
 // Telegram
 
 libraryDependencies += "org.augustjune" %% "canoe" % canoeVersion
+
+// Logging
+
+libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackVersion
