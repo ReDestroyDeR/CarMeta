@@ -22,7 +22,7 @@ object ScraperApplication extends IOApp {
     })
     .map(ProducerRecords.one)
     .through(KafkaProducer.pipe(settings))
-    .compile.drain)
+    .repeat) // Update data indefinitely
     .as(ExitCode.Success)
 
 
