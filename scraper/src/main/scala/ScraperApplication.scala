@@ -1,7 +1,8 @@
 package ru.red.car_meta.scraper
 
+import domain.car_domain.{CarAd, CarDefinition, CarEntity}
 import producer.CarDefinitionProducer._
-import scraper.AvtoRussiaScraper
+import scraper.scrapers
 import service.{HtmlScraper, ScrapingService}
 
 import cats.effect.{ExitCode, IO, IOApp}
@@ -12,16 +13,16 @@ object ScraperApplication extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = (for {
     settings <- producerSettings[IO]
-  } yield AvtoRussiaScraper.getDefinitionUrls[IO]
-    .drop(10000)
-    .take(100)
-    .evalMap(url => AvtoRussiaScraper.parseCarLink[IO](url))
-    .filter(_.isDefined)
-    .map(_.get)
-    .map(definition => ProducerRecords.one(ProducerRecord("car-definitions-test", definition.brand, definition)))
+  } yield fs2.Stream.evalSeq(IO.pure(scrapers))
+    .flatMap(_.run[IO, ProducerRecord[String, CarEntity]]{
+      case definition @ CarDefinition(brand) =>
+        ProducerRecord("car-definitions", brand, definition)
+      case ad @ CarAd(brand) =>
+        ProducerRecord("car-ads", brand, ad)
+    })
+    .map(ProducerRecords.one)
     .through(KafkaProducer.pipe(settings))
     .compile.drain)
-    .flatMap(a => a)
     .as(ExitCode.Success)
 
 

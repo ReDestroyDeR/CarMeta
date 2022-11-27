@@ -2,7 +2,20 @@ syntax = "proto2";
 
 package ru.red.car_meta.scraper.domain;
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+    single_file: true
+
+    // Generate the base trait.
+    preamble: [
+        "sealed trait CarEntity"
+    ];
+};
+
 message CarDefinition {
+    option (scalapb.message).extends = "CarEntity";
+
     required string brand = 1;
     required string model = 2;
     required double height = 3;
@@ -17,6 +30,8 @@ message CarDefinition {
 }
 
 message CarAd {
+    option (scalapb.message).extends = "CarEntity";
+
     required string brand = 1;
     required string model = 2;
     required Money price = 3;
