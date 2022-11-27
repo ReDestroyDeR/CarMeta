@@ -32,10 +32,10 @@ lazy val root = (project in file("."))
 
 // Modules
 
-lazy val qualification = project
+lazy val aggregation = project
   .settings(
-    name := "Qualification",
-    idePackagePrefix := Some("ru.red.car_meta.qualification")
+    name := "Aggregation",
+    idePackagePrefix := Some("ru.red.car_meta.aggregation")
   )
   .dependsOn(root)
 
