@@ -1,10 +1,13 @@
 package ru.red.car_meta.aggregation
 package elastic
 
+import config.ElasticConfig
+import config.ElasticConfig._
+
 import cats.effect.kernel.Async
+import cats.implicits._
 import com.sksamuel.elastic4s.http.JavaClient
 import com.sksamuel.elastic4s.{ElasticClient, ElasticProperties}
-import ru.red.car_meta.aggregation.config.ElasticConfig
 
 object ElasticImplicits {
   implicit def client[F[_]: Async]: F[ElasticClient] = for {
@@ -12,4 +15,3 @@ object ElasticImplicits {
     properties <- Async[F].pure(ElasticProperties(config.host))
   } yield ElasticClient(JavaClient(properties))
 }
-
