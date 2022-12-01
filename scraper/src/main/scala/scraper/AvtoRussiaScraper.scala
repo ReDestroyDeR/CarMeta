@@ -6,13 +6,13 @@ import service.HtmlScraper
 
 import cats.Monad
 import cats.data.OptionT
-import cats.effect.kernel.{Clock, Concurrent}
+import cats.effect.kernel.{Async, Clock, Concurrent}
 import cats.implicits._
 import fs2._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
-import ru.red.car_meta.scraper.domain.car_domain.CarDefinition
+import ru.red.car_meta.scraper.domain.car_domain.{CarDefinition, CarEntity}
 
 import scala.util.Try
 

@@ -11,7 +11,7 @@ import cats.effect.kernel.{Async, Clock, Concurrent}
 sealed trait Scraper {
   def getDomain[F[_]: Monad]: F[Source]
 
-  def run[F[_]: Async: HtmlScraper, B](partialFunction: PartialFunction[CarEntity, _ <: B]): fs2.Stream[F, _ <: B]
+  def run[F[_]: Async: HtmlScraper, B](partialFunction: PartialFunction[CarEntity, _ <: B]): fs2.Stream[F, B]
 }
 
 trait CarAdScraper extends Scraper {
@@ -19,7 +19,7 @@ trait CarAdScraper extends Scraper {
 
   def parseAdLink[F[_]: Monad: Concurrent: Clock: HtmlScraper](carLink: String): F[Option[CarAd]]
 
-  override def run[F[_]: Async: HtmlScraper, B](partialFunction: PartialFunction[CarEntity, B]): fs2.Stream[F, B] =
+  override def run[F[_]: Async: HtmlScraper, B](partialFunction: PartialFunction[CarEntity, _ <: B]): fs2.Stream[F, B] =
     getAdUrls[F]
       .parEvalMap(Runtime.getRuntime.availableProcessors())(parseAdLink[F])
       .filter(_.isDefined)
@@ -33,7 +33,7 @@ trait CarDefinitionScraper extends Scraper {
 
   def parseCarLink[F[_]: Monad: Concurrent: Clock: HtmlScraper](carLink: String): F[Option[CarDefinition]]
 
-  override def run[F[_]: Async: HtmlScraper, B](partialFunction: PartialFunction[CarEntity, B]): fs2.Stream[F, B] =
+  override def run[F[_]: Async: HtmlScraper, B](partialFunction: PartialFunction[CarEntity, _ <: B]): fs2.Stream[F, B] =
     getDefinitionUrls[F]
       .parEvalMap(Runtime.getRuntime.availableProcessors())(parseCarLink[F])
       .filter(_.isDefined)

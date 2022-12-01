@@ -2,7 +2,7 @@ package ru.red.car_meta.aggregation
 package elastic
 
 import config.ElasticConfig
-import config.ElasticConfig._
+import config.KafkaConfig._
 
 import cats.effect.kernel.Async
 import cats.implicits._
