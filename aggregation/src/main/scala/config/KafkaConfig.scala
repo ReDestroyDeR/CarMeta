@@ -11,7 +11,8 @@ import java.nio.file.Paths
 
 final case class KafkaConfig
 (
-  bootstrapServers: String
+  bootstrapServers: String,
+  groupId: String
 )
 object KafkaConfig {
   implicit val kafkaDecoder: Decoder[KafkaConfig] = deriveDecoder[KafkaConfig]

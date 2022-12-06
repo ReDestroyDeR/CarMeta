@@ -5,7 +5,7 @@ import config.KafkaConfig
 
 import cats.effect.Async
 import cats.implicits._
-import fs2.kafka.{ConsumerSettings, Deserializer}
+import fs2.kafka.{AutoOffsetReset, ConsumerSettings, Deserializer}
 import ru.red.car_meta.scraper.domain.car_domain.CarAd
 
 object AdsConsumer {
@@ -17,5 +17,7 @@ object AdsConsumer {
   implicit def consumerSettings[F[_]: Async]: F[ConsumerSettings[F, String, CarAd]] = for {
     cfg <- KafkaConfig.load[F]
   } yield ConsumerSettings[F, String, CarAd]
+    .withGroupId(cfg.groupId)
     .withBootstrapServers(cfg.bootstrapServers)
+    .withAutoOffsetReset(AutoOffsetReset.Earliest)
 }

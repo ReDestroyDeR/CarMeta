@@ -25,7 +25,7 @@ trait CarAdScraper extends Scraper {
       .filter(_.isDefined)
       .map(_.get)
       .filter(partialFunction.isDefinedAt)
-      .map(partialFunction)
+      .map(partialFunction(_))
 }
 
 trait CarDefinitionScraper extends Scraper {
@@ -35,10 +35,11 @@ trait CarDefinitionScraper extends Scraper {
 
   override def run[F[_] : Async : HtmlScraper, B](partialFunction: PartialFunction[CarEntity, _ <: B]): fs2.Stream[F, B] =
     getDefinitionUrls[F]
+      .drop(10000)
       .parEvalMap(Runtime.getRuntime.availableProcessors())(parseCarLink[F])
       .filter(_.isDefined)
       .map(_.get)
       .filter(partialFunction.isDefinedAt)
-      .map(partialFunction)
+      .map(partialFunction(_))
 }
 

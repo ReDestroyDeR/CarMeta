@@ -39,7 +39,7 @@ class RedisElasticReferenceRepository[F[_]: Async] extends RedisRepository[F] {
 
   override def cacheReference(reference: ElasticReference): F[Unit] = for {
     client <- redisClient
-  } yield client.set(reference.model, reference.id)
+  } yield client.set(reference.model, reference.toByteArray)
 
 
   /*
@@ -60,7 +60,7 @@ class RedisElasticReferenceRepository[F[_]: Async] extends RedisRepository[F] {
     client <- redisClient
   } yield client.hget[CarAdList](cfg.carAdDlqName, carAd.model)
     .map(_.addAdvertisements(carAd))
-    .fold(client.hset(cfg.carAdDlqName, carAd.model, CarAdList(carAd :: Nil))
-        )(client.hset(cfg.carAdDlqName, carAd.model, _)))
+    .fold(client.hset(cfg.carAdDlqName, carAd.model, CarAdList(carAd :: Nil).toByteArray)
+        )(list => client.hset(cfg.carAdDlqName, carAd.model, list.toByteArray)))
     .void
 }

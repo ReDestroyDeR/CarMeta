@@ -19,5 +19,7 @@ object DefinitionConsumer {
   implicit def consumerSettings[F[_]: Async]: F[ConsumerSettings[F, String, CarDefinition]] = for {
     cfg <- KafkaConfig.load[F]
   } yield ConsumerSettings[F, String, CarDefinition]
+    .withGroupId(cfg.groupId)
     .withBootstrapServers(cfg.bootstrapServers)
+    .withAutoOffsetReset(AutoOffsetReset.Earliest)
 }

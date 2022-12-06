@@ -51,11 +51,9 @@ class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger : ElasticRepositor
             response <- ElasticRepository[F].put(car)
             carWithId = car.withElasticId(response.result.id)
             _ <- RedisRepository[F].cacheReference(ElasticReference(carWithId.model, carWithId.elasticId.get))
-            _ <- Concurrent[F].start(
-              processAds(RedisRepository[F].getCarAdvertisementDLQ(carWithId.model))
-                .compile
-                .drain
-            )
+            _ <- processAds(RedisRepository[F].getCarAdvertisementDLQ(carWithId.model))
+              .compile
+              .drain
           } yield ()
         } { eRef =>
           for {

@@ -16,8 +16,9 @@ object ScraperApplication extends IOApp {
     settings <- producerSettings[IO]
   } yield fs2.Stream.evalSeq(IO.pure(scrapers))
     .flatMap(_.run[IO, ProducerRecord[String, CarEntity with GeneratedMessage]]{
-      case definition @ CarDefinition(brand,_,_,_,_,_,_,_,_,_,_,_) =>
+      case definition @ CarDefinition(brand,_,_,_,_,_,_,_,_,_,_,_) => {
         ProducerRecord("car-definitions", brand, definition)
+      }
       case ad @ CarAd(brand,_,_,_,_,_) =>
         ProducerRecord("car-ads", brand, ad)
     })

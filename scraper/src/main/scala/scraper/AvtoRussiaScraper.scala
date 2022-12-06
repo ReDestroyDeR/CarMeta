@@ -2,17 +2,17 @@ package ru.red.car_meta.scraper
 package scraper
 
 import domain._
+import domain.car_domain.CarDefinition
 import service.HtmlScraper
 
 import cats.Monad
 import cats.data.OptionT
-import cats.effect.kernel.{Async, Clock, Concurrent}
+import cats.effect.kernel.{Clock, Concurrent}
 import cats.implicits._
 import fs2._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
-import ru.red.car_meta.scraper.domain.car_domain.{CarDefinition, CarEntity}
 
 import scala.util.Try
 
@@ -67,7 +67,7 @@ object AvtoRussiaScraper extends CarDefinitionScraper {
     maximumAllowedMass <- OptionT(Monad[F].point(elements.get("Полная масса"))).map(parseDouble)
     maximumSpeed <- OptionT(Monad[F].point(elements.get("Максимальная скорость"))).map(parseDouble)
     accelerationSpeed <- OptionT(Monad[F].point(elements.get("Время разгона до 100 км/ч"))).map(parseDouble)
-    seats <- OptionT(Monad[F].point(elements.get("Количество мест"))).map(_.toInt)
+    seats <- OptionT(Monad[F].point(elements.get("Количество мест"))).map(parseInt)
     retrievedAt <- OptionT.liftF(Clock[F].realTime.map(_.toMillis))
   } yield CarDefinition(
       brand,
@@ -84,6 +84,11 @@ object AvtoRussiaScraper extends CarDefinitionScraper {
   )).value
 
   override def getDomain[F[_]: Monad]: F[Source] = Monad[F].pure(Source("https://avto-russia.ru", this))
+
+  private def parseInt(str: String): Int =
+    Try(str.toInt).orElse(
+      Try(str.split("\\D")(0)).map(_.toInt)
+    ).get
 
   private def parseDouble(str: String): Double =
     Try(str.split(" ")(0).toDouble).getOrElse(0.0d)
