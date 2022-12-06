@@ -26,6 +26,8 @@ val logbackVersion = "1.4.5"
 
 val elastic4sVersion = "8.5.0"
 
+val redisVersion = "3.41"
+
 lazy val root = (project in file("."))
   .settings(
     name := "CarMeta",
@@ -119,4 +121,10 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackVersion
 libraryDependencies ++= Seq(
   "com.sksamuel.elastic4s" %% "elastic4s-client-esjava" % elastic4sVersion,
   "com.sksamuel.elastic4s" %% "elastic4s-testkit" % elastic4sVersion % "test"
+)
+
+// Redis
+
+libraryDependencies ++= Seq(
+  "net.debasishg" %% "redisclient" % redisVersion
 )

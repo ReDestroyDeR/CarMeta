@@ -11,7 +11,8 @@ import java.nio.file.Paths
 
 final case class ElasticConfig
 (
-  host: String
+  host: String,
+  carIndexName: String
 )
 object ElasticConfig {
   implicit val elasticDecoder: Decoder[ElasticConfig] = deriveDecoder[ElasticConfig]

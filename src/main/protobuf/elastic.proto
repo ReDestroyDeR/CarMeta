@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package ru.red.car_meta.elastic.domain;
+
+message ElasticReference {
+    required string model = 1;
+    required string id = 2;
+}

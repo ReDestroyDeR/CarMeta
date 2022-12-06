@@ -13,6 +13,18 @@ option (scalapb.options) = {
     ];
 };
 
+message Money {
+    required double amount = 1;
+    required Currency currency = 2;
+}
+
+enum Currency {
+    EUR = 1;
+    USD = 2;
+    RUB = 3;
+}
+
+
 message CarDefinition {
     option (scalapb.message).extends = "CarEntity";
 
@@ -37,15 +49,26 @@ message CarAd {
     required Money price = 3;
     required string adUrl = 4;
     required uint64 retrievedAt = 5;
+}
 
-    enum Currency {
-        EUR = 1;
-        USD = 2;
-        RUB = 3;
-    }
+message Car {
+    option (scalapb.message).extends = "CarEntity";
 
-    message Money {
-        required double amount = 1;
-        required Currency currency = 2;
-    }
+    optional string elasticId = 1;
+    required string brand = 2;
+    required string model = 3;
+    required double height = 4;
+    required double width = 5;
+    required double length = 6;
+    required double maximumAllowedMass = 7;
+    required double maximumSpeed = 8;
+    required double accelerationSpeed = 9;
+    required uint32 seats = 10;
+    required string sourceLink = 11;
+    required uint64 retrievedAt = 12;
+    repeated CarAd advertisements = 14;
+}
+
+message CarAdList {
+    repeated CarAd advertisements = 1;
 }
