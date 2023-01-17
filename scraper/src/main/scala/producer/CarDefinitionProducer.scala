@@ -11,12 +11,9 @@ import scalapb.GeneratedMessage
 
 
 object CarDefinitionProducer {
-  implicit def producerSettings[F[_]: Async]: F[ProducerSettings[F, String, CarEntity with GeneratedMessage]] = for {
-    config <- KafkaConfig.load[F]
-  } yield ProducerSettings(
-    keySerializer = Serializer[F, String],
-    valueSerializer = Serializer.lift[F, CarEntity with GeneratedMessage]
-      (carEntity => Async[F].pure(carEntity.toByteArray))
-  ).withBootstrapServers(config.bootstrapServers)
-
+  def producerSettings[F[_]: Async](config: KafkaConfig): ProducerSettings[F, String, CarEntity with GeneratedMessage] =
+    ProducerSettings(keySerializer = Serializer[F, String],
+      valueSerializer = Serializer.lift[F, CarEntity with GeneratedMessage]
+        (carEntity => Async[F].pure(carEntity.toByteArray))
+    ).withBootstrapServers(config.bootstrapServers)
 }

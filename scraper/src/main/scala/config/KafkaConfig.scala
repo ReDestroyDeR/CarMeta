@@ -1,6 +1,7 @@
 package ru.red.car_meta.scraper
 package config
 
+import cats.effect.Resource
 import cats.effect.kernel.Async
 import ciris._
 import ciris.circe.yaml._
@@ -18,8 +19,8 @@ object KafkaConfig {
   implicit val kafkaConfigDecoder: ConfigDecoder[String, KafkaConfig] =
     circeYamlConfigDecoder("KafkaConfig")
 
-  def load[F[_]: Async]: F[KafkaConfig] =
-    file(Paths.get(getClass.getClassLoader.getResource("kafka.yaml").getPath))
+  def load[F[_]: Async]: Resource[F, KafkaConfig] =
+    Resource.eval(file(Paths.get(getClass.getClassLoader.getResource("kafka.yaml").getPath))
       .as[KafkaConfig]
-      .load[F]
+      .load[F])
 }

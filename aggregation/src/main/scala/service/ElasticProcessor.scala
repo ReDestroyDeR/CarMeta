@@ -26,7 +26,7 @@ class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger](elastic: ElasticR
   private val parallelism: Int = Runtime.getRuntime.availableProcessors();
 
   override def processDefinitions(definitions: Stream[F, CarDefinition]): Stream[F, Unit] = {
-    definitions.evalMap{ definition =>
+    definitions.parEvalMap(parallelism){ definition =>
       for {
         elasticId <- redis.getByModel(definition.model)
       } yield Car(
@@ -44,7 +44,7 @@ class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger](elastic: ElasticR
         retrievedAt = definition.retrievedAt,
         advertisements = List()
       )
-    }.evalMap(car =>
+    }.parEvalMap(parallelism)(car =>
       redis.getByModel(car.model)
         .flatMap(_.fold {
           for {
@@ -65,12 +65,11 @@ class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger](elastic: ElasticR
   }
 
   override def processAds(ads: Stream[F, CarAd]): Stream[F, Unit] =
-    ads.evalMap { ad => (
+    ads.parEvalMap(parallelism){ ad => (
       for {
         elasticId <- redis.getByModel(ad.model)
         _ <- Logger[F].info(s"Got elastic id for $ad - $elasticId")
       } yield elasticId.fold(redis.putCarAdvertisementInDLQ(ad))
                             (ref => elastic.put(ref.id, ad).void))
-      .flatten
     }
 }

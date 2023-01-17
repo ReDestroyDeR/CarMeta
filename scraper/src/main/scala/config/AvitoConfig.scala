@@ -1,6 +1,7 @@
 package ru.red.car_meta.scraper
 package config
 
+import cats.effect.Resource
 import cats.effect.kernel.Async
 import ciris.circe.yaml.circeYamlConfigDecoder
 import ciris.{ConfigDecoder, file}
@@ -29,9 +30,9 @@ object AvitoConfig {
   implicit val avitoConfigDecoder: ConfigDecoder[String, AvitoConfig] =
     circeYamlConfigDecoder("AvitoConfig")
 
-  def load[F[_]: Async]: F[AvitoConfig] =
-    file(Paths.get(getClass.getClassLoader.getResource("avito.yaml").getPath))
+  def load[F[_]: Async]: Resource[F, AvitoConfig] =
+    Resource.eval(file(Paths.get(getClass.getClassLoader.getResource("avito.yaml").getPath))
       .as[AvitoConfig]
-      .load[F]
+      .load[F])
 }
 
