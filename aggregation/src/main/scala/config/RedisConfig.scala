@@ -1,5 +1,6 @@
 package ru.red.car_meta.aggregation.config
 
+import cats.effect.Resource
 import cats.effect.kernel.Async
 import ciris.circe.yaml.circeYamlConfigDecoder
 import ciris.{ConfigDecoder, file}
@@ -19,8 +20,8 @@ object RedisConfig {
   implicit val redisConfigDecoder: ConfigDecoder[String, RedisConfig] =
     circeYamlConfigDecoder("RedisConfig")
 
-  def load[F[_]: Async]: F[RedisConfig] =
-    file(Paths.get(getClass.getClassLoader.getResource("redis.yaml").getPath))
+  def load[F[_]: Async]: Resource[F, RedisConfig] =
+    Resource.eval(file(Paths.get(getClass.getClassLoader.getResource("redis.yaml").getPath))
       .as[RedisConfig]
-      .load[F]
+      .load[F])
 }

@@ -1,11 +1,13 @@
 package ru.red.car_meta.aggregation
 
+import config.{ElasticConfig, KafkaConfig, RedisConfig}
 import consumer.{AdsConsumer, DefinitionConsumer}
 import dao.{ElasticRepository, ElasticRepositoryImpl, RedisElasticReferenceRepository, RedisRepository}
-import service.{ElasticProcessor, ElasticProcessorImpl}
+import service.ElasticProcessorImpl
 
 import cats.effect.implicits._
-import cats.effect.{Concurrent, ExitCode, IO, IOApp}
+import cats.effect.kernel.Async
+import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.implicits._
 import fs2.kafka.KafkaConsumer
 import org.typelevel.log4cats.Logger
@@ -13,32 +15,36 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 object AggregationApplication extends IOApp {
   implicit val slf4jLogger: Logger[IO] = Slf4jLogger.getLogger[IO]
-  implicit val elasticRepo: ElasticRepository[IO] = new ElasticRepositoryImpl[IO]
-  implicit val redisRepo: RedisRepository[IO] = new RedisElasticReferenceRepository[IO]
-  implicit val elasticProcessor: ElasticProcessor[IO] = new ElasticProcessorImpl[IO]
 
-  override def run(args: List[String]): IO[ExitCode] =
+  def buildPipeline[F[_]: Async: Logger]: Resource[F, Unit] =
     for {
-      defs <- Concurrent[IO].start(fs2.Stream.eval(DefinitionConsumer.consumerSettings[IO])
-        .flatMap(KafkaConsumer.stream(_))
+      elasticConfig <- ElasticConfig.load[F]
+      redisConfig <- RedisConfig.load[F]
+      kafkaConfig <- KafkaConfig.load[F]
+      elasticClient <- ElasticRepository.createClient[F](elasticConfig)
+      redisClient <- RedisRepository.createClient[F](redisConfig)
+      elasticRepo <- Resource.eval(Async[F].delay(new ElasticRepositoryImpl[F](elasticClient, elasticConfig)))
+      redisRepo <- Resource.eval(Async[F].delay(new RedisElasticReferenceRepository[F](redisClient, redisConfig)))
+      elasticProcessor <- Resource.eval(Async[F].delay(new ElasticProcessorImpl[F](elasticRepo, redisRepo)))
+      definitionConsumerSettings <- Resource.pure(DefinitionConsumer.consumerSettings[F](kafkaConfig))
+      adsConsumerSettings <- Resource.pure(AdsConsumer.consumerSettings[F](kafkaConfig))
+      defs <- Resource.eval(KafkaConsumer.stream(definitionConsumerSettings)
         .subscribeTo("car-definitions")
         .records
         .map(_.record.value)
-        .through(ElasticProcessor[IO].processDefinitions(_))
+        .through(elasticProcessor.processDefinitions)
         .compile
         .drain)
-      ads <- Concurrent[IO].start(fs2.Stream.eval(AdsConsumer.consumerSettings[IO])
-        .flatMap(KafkaConsumer.stream(_))
+      ads <- Resource.eval(KafkaConsumer.stream(adsConsumerSettings)
         .subscribeTo("car-ads")
         .records
         .map(_.record.value)
-        .through(ElasticProcessor[IO].processAds(_))
+        .through(elasticProcessor.processAds)
         .compile
         .drain)
-      // Never
-      _ <- defs.join
-      _ <- ads.join
-    } yield ExitCode.Success
+    } yield ()
 
+  override def run(args: List[String]): IO[ExitCode] =
+    buildPipeline[IO].useForever.as(ExitCode.Success)
 
 }

@@ -2,12 +2,12 @@ package ru.red.car_meta.aggregation
 package dao
 
 import config.ElasticConfig
-import dao.ElasticRepository.client
 import domain.{CarHitReader, CarIndexable}
 import elastic4s._
 
 import cats.data.OptionT
 import cats.effect.kernel.Async
+import cats.effect.{Resource, Sync}
 import cats.implicits._
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.http.JavaClient
@@ -25,34 +25,26 @@ sealed trait ElasticRepository[F[_]] {
 }
 
 object ElasticRepository {
-  implicit def client[F[_] : Async]: F[ElasticClient] = for {
-    config <- ElasticConfig.load[F]
-    properties <- Async[F].pure(ElasticProperties(config.host))
-  } yield ElasticClient(JavaClient(properties))
+  def createClient[F[_] : Sync](cfg: ElasticConfig): Resource[F, ElasticClient] =
+    Resource.fromAutoCloseable(Sync[F].delay(ElasticClient(JavaClient(ElasticProperties(cfg.host)))))
 
   def apply[F[_] : ElasticRepository]: ElasticRepository[F] = implicitly[ElasticRepository[F]]
 }
 
-class ElasticRepositoryImpl[F[_] : Async] extends ElasticRepository[F] {
+class ElasticRepositoryImpl[F[_] : Async](client: ElasticClient, config: ElasticConfig) extends ElasticRepository[F] {
   override def put(car: Car): F[Response[IndexResponse]] = for {
-    config <- ElasticConfig.load[F]
-    client <- client[F]
     res <- client.execute {
       indexInto(config.carIndexName).doc(car)
     }
   } yield res
 
   override def put(id: String, car: Car): F[Response[UpdateResponse]] = for {
-    config <- ElasticConfig.load[F]
-    client <- client[F]
     update <- client.execute {
       updateById(config.carIndexName, id).doc(car)
     }
   } yield update
 
   override def put(id: String, ad: CarAd): F[Response[UpdateResponse]] = (for {
-    config <- OptionT.liftF(ElasticConfig.load[F])
-    client <- OptionT.liftF(client[F])
     car <- OptionT(client.execute(search(config.carIndexName).query(idsQuery(id)))
       .map(_.result.to[Car].headOption))
     update <- OptionT.liftF(client.execute {

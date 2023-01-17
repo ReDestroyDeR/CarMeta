@@ -22,13 +22,13 @@ object ElasticProcessor {
   def apply[F[_] : ElasticProcessor]: ElasticProcessor[F] = implicitly[ElasticProcessor[F]]
 }
 
-class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger : ElasticRepository : RedisRepository] extends ElasticProcessor[F] {
+class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger](elastic: ElasticRepository[F], redis: RedisRepository[F]) extends ElasticProcessor[F] {
   private val parallelism: Int = Runtime.getRuntime.availableProcessors();
 
   override def processDefinitions(definitions: Stream[F, CarDefinition]): Stream[F, Unit] = {
-    definitions.parEvalMapUnordered(parallelism) { definition =>
+    definitions.evalMap{ definition =>
       for {
-        elasticId <- RedisRepository[F].getByModel(definition.model)
+        elasticId <- redis.getByModel(definition.model)
       } yield Car(
         elasticId = elasticId.map(_.id),
         brand = definition.brand,
@@ -44,21 +44,21 @@ class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger : ElasticRepositor
         retrievedAt = definition.retrievedAt,
         advertisements = List()
       )
-    }.parEvalMapUnordered(parallelism)(car =>
-      RedisRepository[F].getByModel(car.model)
+    }.evalMap(car =>
+      redis.getByModel(car.model)
         .flatMap(_.fold {
           for {
-            response <- ElasticRepository[F].put(car)
+            response <- elastic.put(car)
             carWithId = car.withElasticId(response.result.id)
-            _ <- RedisRepository[F].cacheReference(ElasticReference(carWithId.model, carWithId.elasticId.get))
-            _ <- processAds(RedisRepository[F].getCarAdvertisementDLQ(carWithId.model))
+            _ <- redis.cacheReference(ElasticReference(carWithId.model, carWithId.elasticId.get))
+            _ <- processAds(redis.getCarAdvertisementDLQ(carWithId.model))
               .compile
               .drain
           } yield ()
         } { eRef =>
           for {
             _ <- Logger[F].info(s"Pushing record to elastic by $eRef")
-            response <- ElasticRepository[F].put(eRef.id, car.withElasticId(eRef.id))
+            response <- elastic.put(eRef.id, car.withElasticId(eRef.id))
           } yield ()
         })
     )
@@ -67,10 +67,10 @@ class ElasticProcessorImpl[F[_] : Monad : Concurrent : Logger : ElasticRepositor
   override def processAds(ads: Stream[F, CarAd]): Stream[F, Unit] =
     ads.evalMap { ad => (
       for {
-        elasticId <- RedisRepository[F].getByModel(ad.model)
+        elasticId <- redis.getByModel(ad.model)
         _ <- Logger[F].info(s"Got elastic id for $ad - $elasticId")
-      } yield elasticId.fold(RedisRepository[F].putCarAdvertisementInDLQ(ad)
-      )(ref => ElasticRepository[F].put(ref.id, ad).void))
+      } yield elasticId.fold(redis.putCarAdvertisementInDLQ(ad))
+                            (ref => elastic.put(ref.id, ad).void))
       .flatten
     }
 }
