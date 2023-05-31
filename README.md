@@ -1,7 +1,7 @@
 # CarMeta
 Car Information telegram bot that scrapes Russian car services 
 
-This is my final project for "Scala Professional" course at Otus.
+This is my final project for "Scala Developer" course at Otus.
 
 ## Architecture
 
